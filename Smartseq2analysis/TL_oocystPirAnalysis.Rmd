@@ -29,7 +29,7 @@ bir_id <- read.csv("/Users/littlet/Dropbox (The Francis Crick)/Data/genelist_pla
 
 ```{r tmmnorm, echo=FALSE}
 
-#Need to get the .csv file of the tmm logged counts from the zip file
+#Need to get the .csv file of the tmm logged counts from the zip file.
 
 # unzip('../Expression_Matrices/Smartseq2/SS2_tmmlogcounts.csv.zip', list = TRUE)$Name
 sc_tmmnorm <- read.csv(unz('../Expression_Matrices/Smartseq2/SS2_tmmlogcounts.csv.zip',
@@ -74,21 +74,32 @@ mca.qc.sex <- mca.qc[, (colData(mca.qc)$ShortenedLifeStage2 == "Male") | (colDat
 ```
 
 ```{r num_pir}
+
+#Need to use ShortenedStage2 and 4 to get the times the Ookinetes/Oocysts were sampled, 
+# as they took a timepoint from which they got both and used transcription to separate.
+
 singlecell_counts <- sc_tmmnorm %>% 
   rownames_to_column(var = 'Geneid') %>% 
   reshape2::melt(id.vars = c('Geneid'),
                  variable.name = ('cell'),
                  value.name = ('count')) %>% 
   mutate(cell_type = str_remove(cell, pattern = '_[[:digit:]]+$'),
-         ShortenedStage2 = mca.qc$ShortenedLifeStage2[match(cell, mca.qc$X)]) %>% 
-  mutate(cell_time = case_when(
-    cell_type == 'oocyst' & ShortenedStage2 == 'oocyst' ~ 'oocyst_late', 
-    cell_type == 'oocyst' & ShortenedStage2 == 'ookoo' ~ 'oocyst_early',
-    cell_type == 'ookinete' & ShortenedStage2 == 'ookoo' ~ 'ookinete_late',
-    cell_type == 'ookinete' & ShortenedStage2 == 'ookinete' ~ 'ookinete_early',
-    grepl(cell_type, pattern = 'Shz') ~ 'schizont',
-    TRUE ~ as.character(cell_type))
+         ShortenedStage2 = sc_meta$ShortenedLifeStage2[match(cell, sc_meta$sample_id)],
+         ShortenedStage4 = sc_meta$ShortenedLifeStage4[match(cell, sc_meta$sample_id)]) %>% 
+  mutate(cell_name = case_when(
+    ShortenedStage4 == 'Oocyst' & ShortenedStage2 == 'oocyst' ~ 'Oocyst_96h', 
+    ShortenedStage4 == 'Oocyst' & ShortenedStage2 == 'ookoo' ~ 'Oocyst_48h',
+    ShortenedStage4 == 'Ookinete' & ShortenedStage2 == 'ookoo' ~ 'Ookinete_48h',
+    ShortenedStage4 == 'Ookinete' & ShortenedStage2 == 'ook' ~ 'Ookinete_18h_24h',
+    TRUE ~ as.character(ShortenedStage4))
   )
-unique(singlecell_counts$cell_time)
+
+#Check
+# unique(singlecell_counts$cell_name)
+# filter(singlecell_counts, ShortenedStage2 %in% 'ook', ShortenedStage4 %in% 'Ookinete')[1:5,]
+```
+
+```{r}
+
 ```
 
