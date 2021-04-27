@@ -100,6 +100,71 @@ singlecell_counts <- sc_tmmnorm %>%
 ```
 
 ```{r}
+singlecell_counts_pir_df <- singlecell_counts %>% 
+  filter(Geneid %in% bir_id) %>% 
+  group_by(cell, cell_name) %>% 
+  dplyr::summarise(total_pir_counts = sum(count),
+                   num_pirs = n_distinct(Geneid[count > 0]))
 
+order <- singlecell_counts_pir_df %>% 
+  group_by(cell_name) %>% 
+  dplyr::summarise(num_pirs_median = median(num_pirs)) %>% 
+  arrange(desc(num_pirs_median)) %>% 
+  .$cell_name
+
+(p <- ggplot(
+  data = singlecell_counts_pir_df, 
+  aes(x = factor(cell_name, 
+                 levels = order), 
+      y = num_pirs)
+) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_dotplot(binaxis = 'y',
+                 stackdir = 'center',
+                 # binwidth = 0.02,
+                 stackratio = 0.01,
+                 dotsize = 0.5,
+                 position = position_nudge(x = -0.05, y = 0),
+                 alpha = 0.5) +
+    labs(x = 'Life cycle stage', y = 'Number of bir genes detected by raw counts') +
+    scale_y_continuous(breaks = seq(0,35,5)) +
+    coord_cartesian(ylim = c(0, 35)) +
+    theme_classic() +
+    theme(
+      axis.text.x = element_text(angle = 45,
+                                 hjust = 1)
+    ))
+```
+
+```{r}
+order <- singlecell_counts_pir_df %>% 
+  group_by(cell_name) %>% 
+  dplyr::summarise(total_pir_counts_median = median(total_pir_counts)) %>% 
+  arrange(desc(total_pir_counts_median)) %>% 
+  .$cell_name
+
+(p <- ggplot(
+  data = singlecell_counts_pir_df, 
+  aes(x = factor(cell_name, 
+                 levels = order), 
+      y = total_pir_counts)
+) +
+    geom_boxplot(outlier.shape = NA) +
+    geom_dotplot(binaxis = 'y',
+                 stackdir = 'center',
+                 # binwidth = 0.02,
+                 stackratio = 0.3,
+                 dotsize = 0.25,
+                 position = position_nudge(x = -0.05, y = 0),
+                 alpha = 0.5
+                 ) +
+    labs(x = 'Life cycle stage', y = 'Sum of TMM logged pir gene counts') +
+    # scale_y_continuous(breaks = seq(0,35,5)) +
+    # coord_cartesian(ylim = c(0, 35)) +
+    theme_classic() +
+    theme(
+      axis.text.x = element_text(angle = 45,
+                                 hjust = 1)
+    ))
 ```
 
