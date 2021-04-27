@@ -7,21 +7,21 @@ output:
 
 set wd and install packages
 ```{r, message=FALSE}
-setwd("/Users/vh3/Documents/MCA/ANALYSIS_3")
+setwd(".")
 
 #load required packages
 require("Matrix")
+library(devtools)
 library(scater, quietly = TRUE)
 require("SingleCellExperiment")
 options(stringsAsFactors = FALSE)
 library(plotly)
-library(devtools)
 ```
 
 read in data, normalize two ways and look at PCAs
 ```{r}
-molecules <- read.table("/Users/vh3/Documents/MCA/forgithub/Expression_Matrices/Smartseq2/SS2_counts.csv", header = TRUE, sep = ",", row.names=1, stringsAsFactors = TRUE)
-anno <- read.delim("/Users/vh3/Documents/MCA/forgithub/Expression_Matrices/Smartseq2/SS2_pheno.csv", header = TRUE, sep = ",")
+molecules <- read.table("../../Expression_Matrices/Smartseq2/SS2_counts.csv", header = TRUE, sep = ",", row.names=1, stringsAsFactors = TRUE)
+anno <- read.delim("../../Expression_Matrices/Smartseq2/SS2_pheno.csv", header = TRUE, sep = ",")
 
 
 cols <- c("bbSpz" = "navy", "EEF"="darkorange", "Merozoite"="lightpink", "oocyst"="steelblue", "ook" = "turquoise4", "ooSpz" = "lightskyblue", "Ring"="hotpink", "sgSpz"= "royalblue", "Schizont" = "violetred", "Male"="purple", "Female"="purple4", "ookoo" = "mediumturquoise", "Trophozoite"="violet")
@@ -45,12 +45,12 @@ mca.qc.idc <- mca.qc[, (colData(mca.qc)$ShortenedLifeStage == "Merozoite") |
 mca.qc.sex <- mca.qc[, (colData(mca.qc)$ShortenedLifeStage2 == "Male") | (colData(mca.qc)$ShortenedLifeStage2 == "Female")]
 
 
-mca.qc.ookoo.tmm <- scater::normaliseExprs(mca.qc.ookoo, method = "TMM")
-#mca.qc.ooc.tmm <- scater::normaliseExprs(mca.qc.ooc, method = "TMM")
-mca.qc.eef.tmm <- scater::normaliseExprs(mca.qc.eef, method = "TMM")
-mca.qc.spz.tmm <- scater::normaliseExprs(mca.qc.spz, method = "TMM")
-mca.qc.idc.tmm <- scater::normaliseExprs(mca.qc.idc, method = "TMM")
-mca.qc.sex.tmm <- scater::normaliseExprs(mca.qc.sex, method = "TMM")
+mca.qc.ookoo.tmm <- edgeR::calcNormFactors(mca.qc.ookoo, method = "TMM")
+#mca.qc.ooc.tmm <- edgeR::calcNormFactors(mca.qc.ooc, method = "TMM")
+mca.qc.eef.tmm <- edgeR::calcNormFactors(mca.qc.eef, method = "TMM")
+mca.qc.spz.tmm <- edgeR::calcNormFactors(mca.qc.spz, method = "TMM")
+mca.qc.idc.tmm <- edgeR::calcNormFactors(mca.qc.idc, method = "TMM")
+mca.qc.sex.tmm <- edgeR::calcNormFactors(mca.qc.sex, method = "TMM")
 
 mca.qc.tmm <- cbind(mca.qc.ookoo.tmm, mca.qc.eef.tmm)
 #mca.qc.tmm <- cbind(mca.qc.tmm, mca.qc.eef.tmm)
@@ -58,12 +58,12 @@ mca.qc.tmm <- cbind(mca.qc.tmm, mca.qc.spz.tmm)
 mca.qc.tmm <- cbind(mca.qc.tmm, mca.qc.idc.tmm)
 mca.qc.tmm <- cbind(mca.qc.tmm, mca.qc.sex.tmm)
 
-pca <- plotPCA(mca.qc.tmm, colour_by = "ShortenedLifeStage2", ntop=50, exprs_values="logcounts")
+pca <- scater::plotPCA(mca.qc.tmm, colour_by = "ShortenedLifeStage2", ntop=50, exprs_values="logcounts")
 pcatab <- pca$data
 ggplot(pcatab, aes(PC1, PC2)) + geom_point(aes(colour=factor(colour_by))) + scale_color_manual(values = cols) + theme_classic()
 
 ###This is what the PCA is from in FIG 1
-mca.qc.tmmall <- scater::normaliseExprs(mca.qc, method = "TMM")
+mca.qc.tmmall <- edgeR::calcNormFactors(mca.qc, method = "TMM")
 pca <- plotPCA(mca.qc.tmmall, colour_by = "ShortenedLifeStage2", exprs_values = "logcounts", ntop = 50)
 pcatab <- pca$data
 ggplot(pcatab, aes(PC1, PC2)) + geom_point(aes(colour=factor(colour_by))) + scale_color_manual(values = cols) + theme_classic()
