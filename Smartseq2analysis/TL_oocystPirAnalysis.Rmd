@@ -1,0 +1,94 @@
+---
+title: "TL_oocystPirAnalysis"
+author: "Timothy Little"
+date: "27/04/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#load required packages
+require("Matrix")
+library(devtools)
+options(stringsAsFactors = FALSE)
+library(dplyr)
+library(tibble)
+library(ggplot2)
+library(data.table)
+library(stringr)
+```
+
+```{r bir_id, message=FALSE, results='hide'}
+
+bir_id <- read.csv("/Users/littlet/Dropbox (The Francis Crick)/Data/genelist_plasmoDB_pirsearch_pberghei.csv") %>% 
+  filter(Product.Description == 'PIR protein') %>% 
+  select(Gene.ID) %>% 
+  .$Gene.ID
+```
+
+```{r tmmnorm, echo=FALSE}
+
+#Need to get the .csv file of the tmm logged counts from the zip file
+
+# unzip('../Expression_Matrices/Smartseq2/SS2_tmmlogcounts.csv.zip', list = TRUE)$Name
+sc_tmmnorm <- read.csv(unz('../Expression_Matrices/Smartseq2/SS2_tmmlogcounts.csv.zip',
+                           'SS2_tmmlogcounts.csv'),
+                       header = TRUE,
+                       stringsAsFactors = FALSE,
+                       row.names = 1)
+
+#Get the metadata so that we can do some extra classification.
+
+sc_meta <- read.csv('../Expression_Matrices/Smartseq2/SS2_pheno.csv',
+                       header = TRUE,
+                       stringsAsFactors = FALSE,
+                    row.names = 1)
+```
+
+```{r data}
+molecules <- read.table("../Expression_Matrices/Smartseq2/SS2_counts.csv", header = TRUE, sep = ",", row.names=1, stringsAsFactors = TRUE)
+anno <- read.delim("../Expression_Matrices/Smartseq2/SS2_pheno.csv", header = TRUE, sep = ",")
+
+
+cols <- c("bbSpz" = "navy", "EEF"="darkorange", "Merozoite"="lightpink", "oocyst"="steelblue", "ook" = "turquoise4", "ooSpz" = "lightskyblue", "Ring"="hotpink", "sgSpz"= "royalblue", "Schizont" = "violetred", "Male"="purple", "Female"="purple4", "ookoo" = "mediumturquoise", "Trophozoite"="violet")
+
+mca.qc <- SingleCellExperiment(assays = list(
+  counts = as.matrix(molecules),
+  logcounts = log2(as.matrix(molecules) + 1)
+), colData = anno)
+
+
+mca.qc.ookoo <- mca.qc[, (colData(mca.qc)$ShortenedLifeStage == "ook") | (colData(mca.qc)$ShortenedLifeStage == "ookoo") | (colData(mca.qc)$ShortenedLifeStage == "oocyst")]
+mca.qc.eef <- mca.qc[, (colData(mca.qc)$ShortenedLifeStage == "EEF")]
+mca.qc.spz <- mca.qc[, (colData(mca.qc)$ShortenedLifeStage == "bbSpz") | 
+                          (colData(mca.qc)$ShortenedLifeStage == "sgSpz") |
+                          (colData(mca.qc)$ShortenedLifeStage == "ooSpz")]
+mca.qc.idc <- mca.qc[, (colData(mca.qc)$ShortenedLifeStage == "Merozoite") | 
+                       (colData(mca.qc)$ShortenedLifeStage == "Ring") |
+                       (colData(mca.qc)$ShortenedLifeStage2 == "Schizont") | 
+                       (colData(mca.qc)$ShortenedLifeStage2 == "Trophozoite")]
+mca.qc.sex <- mca.qc[, (colData(mca.qc)$ShortenedLifeStage2 == "Male") | (colData(mca.qc)$ShortenedLifeStage2 == "Female")]
+
+
+```
+
+```{r num_pir}
+singlecell_counts <- sc_tmmnorm %>% 
+  rownames_to_column(var = 'Geneid') %>% 
+  reshape2::melt(id.vars = c('Geneid'),
+                 variable.name = ('cell'),
+                 value.name = ('count')) %>% 
+  mutate(cell_type = str_remove(cell, pattern = '_[[:digit:]]+$'),
+         ShortenedStage2 = mca.qc$ShortenedLifeStage2[match(cell, mca.qc$X)]) %>% 
+  mutate(cell_time = case_when(
+    cell_type == 'oocyst' & ShortenedStage2 == 'oocyst' ~ 'oocyst_late', 
+    cell_type == 'oocyst' & ShortenedStage2 == 'ookoo' ~ 'oocyst_early',
+    cell_type == 'ookinete' & ShortenedStage2 == 'ookoo' ~ 'ookinete_late',
+    cell_type == 'ookinete' & ShortenedStage2 == 'ookinete' ~ 'ookinete_early',
+    grepl(cell_type, pattern = 'Shz') ~ 'schizont',
+    TRUE ~ as.character(cell_type))
+  )
+unique(singlecell_counts$cell_time)
+```
+
