@@ -153,9 +153,9 @@ order <- singlecell_counts_pir_df %>%
     geom_dotplot(binaxis = 'y',
                  stackdir = 'center',
                  # binwidth = 0.02,
-                 stackratio = 0.3,
+                 stackratio = 0.075,
                  dotsize = 0.25,
-                 position = position_nudge(x = -0.05, y = 0),
+                 position = position_nudge(x = -0.04, y = 0),
                  alpha = 0.5
                  ) +
     labs(x = 'Life cycle stage', y = 'Sum of TMM logged pir gene counts') +
@@ -166,5 +166,6 @@ order <- singlecell_counts_pir_df %>%
       axis.text.x = element_text(angle = 45,
                                  hjust = 1)
     ))
+
 ```
 
