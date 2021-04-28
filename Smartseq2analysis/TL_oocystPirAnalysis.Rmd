@@ -17,6 +17,7 @@ library(tibble)
 library(ggplot2)
 library(data.table)
 library(stringr)
+library(tidyquant) 
 ```
 
 ```{r bir_id, message=FALSE, results='hide'}
@@ -166,6 +167,39 @@ order <- singlecell_counts_pir_df %>%
       axis.text.x = element_text(angle = 45,
                                  hjust = 1)
     ))
+
+```
+
+# Order using pseudotime
+
+```{r pseudotime}
+
+pseudotime <- read.csv('Pseudotime/allpptinfo_20180629.csv')
+
+singlecell_counts_pir_pst <- singlecell_counts_pir_df %>% 
+  mutate(pst = pseudotime$ppt[match(cell, pseudotime$sample_id)]) %>% 
+  arrange(pst)
+
+singlecell_counts_pir_pst %>% 
+  arrange(pst) %>% 
+  ungroup() %>% 
+  mutate(lag = ifelse(pst == lag(pst)+1 & pst ==lead(pst)-1, 0, 1),
+         lag_pst = dplyr::lag(pst, n = 1),
+         lead_pst = lead(pst)) %>% 
+  filter(lag == 1)
+
+singlecell_counts_pir_pst %>% 
+  # filter(grepl(cell_name, pattern = 'Ook|Oocy|Sp|Fem|Male|Sch|Troph')) %>%
+  ggplot(aes(x = pst, 
+             y = total_pir_counts,
+             col = cell_name)) + 
+  geom_point(size = 1, alpha = 0.5) +
+  geom_ma(ma_fun = SMA, n = 10, linetype = 1, col = 'black') +
+  theme_classic() +
+  ylab('logged TMM counts (simple moving average with n = 10)') +
+  xlab('Pseudotime')
+  
+  
 
 ```
 
