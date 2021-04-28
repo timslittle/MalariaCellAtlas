@@ -7,17 +7,18 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+options(stringsAsFactors = FALSE)
 
 #load required packages
 require("Matrix")
 library(devtools)
-options(stringsAsFactors = FALSE)
 library(dplyr)
 library(tibble)
 library(ggplot2)
 library(data.table)
 library(stringr)
 library(tidyquant) 
+library(cowplot)
 ```
 
 ```{r bir_id, message=FALSE, results='hide'}
@@ -188,7 +189,7 @@ singlecell_counts_pir_pst %>%
          lead_pst = lead(pst)) %>% 
   filter(lag == 1)
 
-singlecell_counts_pir_pst %>% 
+(p <- singlecell_counts_pir_pst %>% 
   # filter(grepl(cell_name, pattern = 'Ook|Oocy|Sp|Fem|Male|Sch|Troph')) %>%
   ggplot(aes(x = pst, 
              y = total_pir_counts,
@@ -197,9 +198,14 @@ singlecell_counts_pir_pst %>%
   geom_ma(ma_fun = SMA, n = 10, linetype = 1, col = 'black') +
   theme_classic() +
   ylab('logged TMM counts (simple moving average with n = 10)') +
-  xlab('Pseudotime')
+  xlab('Pseudotime'))
   
-  
+ggsave2(filename = 'pirTMMcounts_Pseudotime.pdf',
+          plot = p,
+          dpi = 300,
+          width = 15,
+          height = 10,
+          units = 'cm')
 
 ```
 
